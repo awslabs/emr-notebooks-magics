@@ -1,11 +1,90 @@
-## My Project
+# EMR Notebooks iPython Magics
 
-TODO: Fill this README out!
+This repository contains iPython magics that can be used in Amazon EMR Notebooks.
 
-Be sure to:
+## Table of Contents
+1. [Installation](#Installation)
+2. [Usage](#Usage)
+3. [Security](#Security)
+4. [License](#License)
+5. [Contributing](#Contributing)
+6. [Getting Help](#Getting Help)
 
-* Change the title in this README
-* Edit your repository description on GitHub
+
+## Installation
+
+### Installing Dependencies
+`%mount_workspace_dir` magic mounts the Workspace using [S3-FUSE](https://github.com/s3fs-fuse/s3fs-fuse) or [Goofys](https://github.com/kahing/goofys).
+
+* Installing S3-FUSE
+
+  Add the following lines to your cluster bootstrap action script.
+  ```
+  #!/bin/sh
+
+  sudo amazon-linux-extras install epel -y
+  sudo yum install s3fs-fuse -y
+  ```
+
+* Installing Goofys
+
+  Add the following lines to your cluster bootstrap action script.
+  ```
+  #!/bin/sh
+
+  sudo wget https://github.com/kahing/goofys/releases/latest/download/goofys -P /usr/bin/
+  sudo chmod ugo+x /usr/bin/goofys
+  ```
+
+Installing iPython magics
+
+* Using EMR Step.
+
+  EMR step script
+  ```
+  #!/bin/sh
+  sudo /mnt/notebook-env/bin/pip install emr-notebooks-magics
+  ```
+
+* From Jupyter Notebook
+  ```
+  %pip install emr-notebooks-magics
+  ```
+The magics are loaded using kernel startup script. If you install magics from Jupyter Notebook, you will need to restart the kernel before using the magic.
+
+Note: EMR-notebook-magics cannot be installed through bootstrap actions as JEG and Notebook environments are installed after the bootstrap.
+
+## Usage
+* `%generate_s3_download_url` magic generates presigned url for S3 objects so that it can be downloaded from the Jupyter Notebook.
+  Refer `%generate_s3_download_url?` for help.
+    * Generate download url for a S3 object specifying full S3 path.
+      ```
+      %generate_s3_download_url s3://my_bucket/path/to/s3/object
+      ```
+
+    * Generate download url for a file in the Workspace specifying path relative to Workspace root.
+      ```
+      %generate_s3_download_url relative/path/to/workspace/file
+      ```
+
+* `%mount_workspace_dir` magic mounts Workspace files on the EMR cluster instance using FUSE based filesystem.
+  Refer `%mount_workspace_dir?` for help.
+    * Mount the entire Workspace onto EMR cluster instance.
+      ```
+      `%mount_workspace_dir .
+      ```
+
+    * Mount a sub-directory `mydirectory` and add `use_cache` mount option of S3-FUSE
+      ```
+      `%mount_workspace_dir mydirectory --params use_cache=/tmp/
+      ```
+
+    * Mount a sub-directory `mydirectory` and add `cheap`, `region` mount option for Goofys.
+      ```
+      `%mount_workspace_dir mydirectory --use goofys --params cheap,region=us-east-1
+      ```
+
+
 
 ## Security
 
