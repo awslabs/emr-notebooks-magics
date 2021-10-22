@@ -7,8 +7,6 @@ This repository contains iPython magics that can be used in Amazon EMR Notebooks
 2. [Usage](#Usage)
 3. [Security](#Security)
 4. [License](#License)
-5. [Contributing](#Contributing)
-6. [Getting Help](#Getting Help)
 
 
 ## Installation
@@ -83,7 +81,17 @@ Note: EMR-notebook-magics cannot be installed through bootstrap actions as JEG a
       ```
       `%mount_workspace_dir mydirectory --use goofys --params cheap,region=us-east-1
       ```
+    * Mount a sub directory `mydirectory` with write access to the mount directory.
+      ```
+      `%mount_workspace_dir mydirectory --allow-write
+      ```
+      | :exclamation:  Warning                  |
+      |-----------------------------------------|
+      | When write access is enabled any changes made to the mount directory are applied to the S3 Workspace. These changes are irreversible, please enable S3 versioning to your S3 Workspace as a pre-caution.
 
+## Limitations
+* Once the Workspace is mounted on the EMR cluster, it can be accessed from all EMR Notebooks in your account that can attach to
+  that EMR cluster.
 
 
 ## Security
