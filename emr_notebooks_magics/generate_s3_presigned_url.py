@@ -49,15 +49,11 @@ class S3DownloadMagics(Magics):
     @line_magic
     def generate_s3_download_url(self, line):
         """
-        Generates an url to download a S3 object. Argument can be either full S3 path or path relative to EMR Workspace root.
+        Generates an url to download a S3 object. Argument should be full S3 path for an S3 object.
         Usage:
-            generate_s3_download_url s3://path/to/s3/object
-            generate_s3_download_url mynotebook.ipynb --expires-in 120
+            generate_s3_download_url s3://path/to/s3/object --expires-in 1200
         """
         args = magic_arguments.parse_argstring(self.generate_s3_download_url, line)
-
-        if not args.path.startswith("s3:"):
-            args.path = os.environ["KERNEL_WORKSPACE_DIR_S3_PREFIX"] + args.path
 
         parsed_url = urlparse(args.path, allow_fragments=False)
         key = remove_prefix(parsed_url.path, "/")
@@ -71,9 +67,9 @@ class S3DownloadMagics(Magics):
                     'Key': key},
             ExpiresIn=args.expires_in)
 
-        expiry_time = datetime.now(timezone.utc) + timedelta(seconds=args.expires_in)
-        html = HTML("""<a href="{}">Click here</a> to download the S3 object. The link will expire at {} UTC"""
-                    .format(signed_url, expiry_time.strftime('%Y-%m-%d %H:%M:%S'))
+        expiry_time_abs, expiry_time_rel = self._get_expiry_time_text(args.expires_in)
+        html = HTML("""<a href="{}">Click here</a> to download the S3 object. The link will expire at {} [in {}] """
+                    .format(signed_url, expiry_time_abs, expiry_time_rel)
                     )
         display(html)
 
@@ -92,3 +88,22 @@ class S3DownloadMagics(Magics):
                                  .format(e.response['Error']['Code'], e.response['Error']['Message']))
         else:
             return True
+
+    def _get_expiry_time_text(self, expiresInSecs):
+        expiry_time_abs = datetime.now(timezone.utc) + timedelta(seconds=expiresInSecs)
+
+        mins, secs = divmod(expiresInSecs, 60)
+        hrs, mins = divmod(mins, 60)
+        days, hrs = divmod(hrs, 24)
+
+        text = []
+        if days > 0:
+            text.append('{:d} day(s), '.format(days))
+        if hrs > 0 or days > 0:
+            text.append('{:d} hour(s) '.format(hrs))
+        if mins > 0 or hrs > 0 or days > 0:
+            text.append('{:d} minute(s) '.format(mins))
+        text.append('{:d} second(s).'.format(secs))
+        expiry_time_rel = ''.join(text)
+
+        return expiry_time_abs.strftime('%Y-%m-%d %H:%M:%S UTC'), expiry_time_rel

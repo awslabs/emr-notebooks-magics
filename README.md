@@ -69,30 +69,24 @@ Note: EMR-notebook-magics cannot be installed through bootstrap actions as JEG a
   Refer `%mount_workspace_dir?` for help.
     * Mount the entire Workspace onto EMR cluster instance.
       ```
-      `%mount_workspace_dir .
+      %mount_workspace_dir .
       ```
 
     * Mount a sub-directory `mydirectory` and add `use_cache` mount option of S3-FUSE
       ```
-      `%mount_workspace_dir mydirectory --params use_cache=/tmp/
+      %mount_workspace_dir mydirectory --params use_cache=/tmp/
       ```
 
     * Mount a sub-directory `mydirectory` and add `cheap`, `region` mount option for Goofys.
       ```
-      `%mount_workspace_dir mydirectory --use goofys --params cheap,region=us-east-1
+      %mount_workspace_dir mydirectory --use goofys --params cheap,region=us-east-1
       ```
-    * Mount a sub directory `mydirectory` with write access to the mount directory.
-      ```
-      `%mount_workspace_dir mydirectory --allow-write
-      ```
-      | :exclamation:  Warning                  |
-      |-----------------------------------------|
-      | When write access is enabled any changes made to the mount directory are applied to the S3 Workspace. These changes are irreversible, please enable S3 versioning to your S3 Workspace as a pre-caution.
 
-## Limitations
-* Once the Workspace is mounted on the EMR cluster, it can be accessed from all EMR Notebooks in your account that can attach to
-  that EMR cluster.
-
+| :exclamation:  Warnings                  |
+|-----------------------------------------|
+| When the write access is enabled, any changes made to the mount directory are applied to the S3 Workspace. These changes are irreversible, please enable S3 versioning to your S3 Workspace as a pre-caution. |
+| Once the Workspace is mounted on the EMR cluster, it can be accessed from all EMR Notebooks in your account that can attach to that cluster. |
+| When you install S3-FUSE or Goofys, its your responsibility to keep those package up to date for new patches. Since Goofys is not managed by any package managers, take necessary steps to upgrade Goofys binaries. |  |
 
 ## Security
 

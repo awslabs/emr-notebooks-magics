@@ -15,6 +15,7 @@ import os
 import json
 import subprocess
 import boto3
+import shlex
 
 from IPython.core import magic_arguments
 from IPython.core.magic import (Magics, magics_class, line_magic)
@@ -51,24 +52,20 @@ class MountWorkspaceDirMagics(Magics):
             For Goofys mount options: run `goofys --help`
             """
     )
-    @magic_arguments.argument(
-        '--allow-write', action='store_true', default=False,
-        help="Allow writing to the mount directory. (Default false)"
-    )
     @line_magic
     def mount_workspace_dir(self, line):
         """
         Mount EMR workspace directory on the remote instance.
-        In EMR notebooks, Jupyter kernels are launched on the remote EMR cluster using Jupyter Enterprise Gateway.
+        In EMR notebooks, the Jupyter kernels are launched on the remote EMR cluster using Jupyter Enterprise Gateway.
         In order to access Workspace files (for e.g. to import a python module) Workspace has to be mounted on the EMR cluster.
 
         By default, the Workspace directory is mounted to read-only directory.
-        Caution: if you allow writes, any changes you make in the mount directory will overwrite the contents in the Workspace.
+        Caution: if you enable writes, any changes you make to the mount directory will overwrite the contents in the Workspace.
         Usage:
             mount_workspace_dir .
             mount_workspace_dir mydirectory
-            mount_workspace_dir mydirectory --use s3-fuse --params use_cache=/tmp/,
-            mount_workspace_dir mydirectory --use goofys --params cheap,region=us-east-1
+            mount_workspace_dir mydirectory --fuse-type s3-fuse --params use_cache=/tmp/
+            mount_workspace_dir mydirectory --fuse-type goofys --params cheap,region=us-east-1
         """
         
         args = magic_arguments.parse_argstring(self.mount_workspace_dir, line)
@@ -96,9 +93,9 @@ class MountWorkspaceDirMagics(Magics):
             raise UsageError("{} is not a valid Workspace directory".format(args.ws_path))
 
         if args.fuse_type == "s3-fuse":
-            ret_code, stdout, stderr = self.mount_using_s3fuse(s3_bucket, s3_key, mount_dir, args.params, not args.allow_write)
+            ret_code, stdout, stderr = self.mount_using_s3fuse(s3_bucket, s3_key, mount_dir, args.params, True)
         elif args.fuse_type == "goofys":
-            ret_code, stdout, stderr = self.mount_using_goofys(s3_bucket, s3_key, mount_dir, args.params, not args.allow_write)
+            ret_code, stdout, stderr = self.mount_using_goofys(s3_bucket, s3_key, mount_dir, args.params, True)
         else:
             raise UsageError("Unknown mount option:{}".format(args.fuse_type))
 
@@ -136,7 +133,7 @@ class MountWorkspaceDirMagics(Magics):
         mount_params = ""
         if params is not None:
             params_list = params.split(",")
-            params_list = ["-o {} ".format(param) for param in params_list]
+            params_list = ["-o {} ".format(shlex.quote(param)) for param in params_list]
             mount_params = "".join(params_list)
 
         # use default iam role
@@ -159,7 +156,7 @@ class MountWorkspaceDirMagics(Magics):
         mount_params = ""
         if params is not None:
             params_list = params.split(",")
-            params_list = ["--{} ".format(param) for param in params_list]
+            params_list = ["--{} ".format(shlex.quote(param)) for param in params_list]
             mount_params = "".join(params_list)
 
         if read_only and "file-mode" not in mount_params:
@@ -173,9 +170,8 @@ class MountWorkspaceDirMagics(Magics):
         return self._execute_command(command)
     
     def _execute_command(self, cmd):
-        cmd_list = cmd.split(" ")
-        process = subprocess.run(cmd_list, capture_output=True, text=True)
-
+        cmd_list = shlex.split(cmd)
+        process = subprocess.run(cmd_list, capture_output=True, text=True, shell=False)
         return process.returncode, process.stdout, process.stderr
 
     def _is_already_mounted(self, mount_dir):
