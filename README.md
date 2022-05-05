@@ -41,7 +41,7 @@ Installing iPython magics
   EMR step script
   ```
   #!/bin/sh
-  sudo /mnt/notebook-env/bin/pip install emr-notebooks-magics
+  sudo -u emr-notebook /mnt/notebook-env/bin/pip install emr-notebooks-magics
   ```
 
 * From Jupyter Notebook
