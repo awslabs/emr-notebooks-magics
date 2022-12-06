@@ -144,6 +144,13 @@ class MountWorkspaceDirMagics(Magics):
         if read_only and "umask" not in mount_params:
             mount_params = "-o umask=277 " + mount_params
 
+        # mount the directory as the current user
+        if "uid" not in mount_params:
+            mount_params = "-o uid={} ".format(os.getuid()) + mount_params
+
+        if "gid" not in mount_params:
+            mount_params = "-o gid={} ".format(os.getgid()) + mount_params
+
         command = "s3fs {}{}:/{} {}".format(mount_params, s3_bucket, s3_key, mount_dir)
         print("Executing command ", command)
         return self._execute_command(command)
