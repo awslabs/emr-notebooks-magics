@@ -13,3 +13,4 @@
 # limitations under the License.
 from .generate_s3_presigned_url import S3DownloadMagics
 from .mount_workspace_dir import MountWorkspaceDirMagics
+from .execute_emr_notebook import ExecuteNotebookMagics

@@ -5,7 +5,7 @@ from pathlib import Path
 
 setup(
     name="emr-notebooks-magics",
-    version="0.2.0",
+    version="0.2.1",
     description="Jupyter Magics for EMR Notebooks.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
