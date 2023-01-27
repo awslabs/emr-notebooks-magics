@@ -13,11 +13,13 @@
 # limitations under the License.
 def load_ipython_extension(ipython):
     try:
-        from emr_notebooks_magics import MountWorkspaceDirMagics, S3DownloadMagics
+        from emr_notebooks_magics import MountWorkspaceDirMagics, S3DownloadMagics, ExecuteNotebookMagics
         mount_ws_dir_magics = MountWorkspaceDirMagics(ipython)
         download_S3_magics = S3DownloadMagics(ipython)
+        execute_notebook_magics = ExecuteNotebookMagics(ipython)
         ipython.register_magics(mount_ws_dir_magics)
         ipython.register_magics(download_S3_magics)
+        ipython.register_magics(execute_notebook_magics)
     except ImportError:
         pass
 
