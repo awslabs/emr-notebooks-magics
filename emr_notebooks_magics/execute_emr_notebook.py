@@ -1,3 +1,17 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import boto3
 import time
@@ -6,10 +20,11 @@ from IPython.core import magic_arguments
 from IPython.core.magic import (Magics, magics_class, line_magic)
 from IPython.core.error import UsageError
 from .utils.instance_metadata_service_utils import IMDSv2Util
-from IPython.display import display, HTML
+from .utils.display_utils import display_html
 
 EXECUTIONS_TERMINAL_STATUS = ["FINISHED", "FAILED"]
 EXECUTIONS_STARTING_STATUS = ["STARTING", "START_PENDING"]
+
 
 @magics_class
 class ExecuteNotebookMagics(Magics):
@@ -51,6 +66,7 @@ class ExecuteNotebookMagics(Magics):
         `
            "elasticmapreduce:StartNotebookExecution",
            "elasticmapreduce:DescribeNotebookExecution",
+           "ec2:DescribeInstances",
            "iam:PassRole"
         `
         """
@@ -67,7 +83,7 @@ class ExecuteNotebookMagics(Magics):
         if emr_notebooks_service_role is None:
             emr_notebooks_service_role = "EMR_Notebooks_DefaultRole"
 
-        print("Going to execute the Notebook {} using the service role {} and the cluster {}".format(notebook, emr_notebooks_service_role, emr_cluster_id))
+        display_html("Going to execute the Notebook {} using the service role {} and the cluster {}".format(notebook, emr_notebooks_service_role, emr_cluster_id))
         start_notebook_resp = self.emr.start_notebook_execution(
             EditorId=workspace_id,
             RelativePath=notebook,
@@ -76,31 +92,30 @@ class ExecuteNotebookMagics(Magics):
         )
 
         notebook_execution_id = start_notebook_resp["NotebookExecutionId"]
-        print("Started Notebook execution with id: {}".format(notebook_execution_id))
-        print("Waiting for execution to finish..")
+        display_html("Started Notebook execution with id: {}. Waiting for execution to finish...".format(notebook_execution_id))
 
         # Polling for execution to finish
         start = time.time()
 
         is_nb_output_link_shown = False
 
-        # Note: Timeout will NOT be precise as there is 15s sleep inside the loop.
+        # Note: Timeout will NOT be precise as there is 10s sleep inside the loop.
         while (time.time() - start) < timeout:
             describe_response = self.emr.describe_notebook_execution(NotebookExecutionId=notebook_execution_id)
             execution_status = describe_response["NotebookExecution"]["Status"]
-            if execution_status in EXECUTIONS_TERMINAL_STATUS:
-                print("Execution completed. Status: ", execution_status)
-                break
-
-            if not is_nb_output_link_shown and execution_status not in EXECUTIONS_STARTING_STATUS:
+            if not is_nb_output_link_shown and "OutputNotebookURI" in describe_response["NotebookExecution"] and execution_status not in EXECUTIONS_STARTING_STATUS:
                 workspace_relative_path = self.get_output_nb_workspace(describe_response["NotebookExecution"]["OutputNotebookURI"])
                 if workspace_relative_path is not None:
-                    html = HTML("""<a href="{}">Click here</a> to view the output Notebook file. (The output cell will be empty until the cell is executed)"""
-                                .format(workspace_relative_path)
-                                )
-                    display(html)
-                is_nb_output_link_shown = True
-            time.sleep(15)
+                    text = """Output of the cells that have finished execution are captured in a new notebook file <a href="{}">{}</a>.""".format(
+                        workspace_relative_path, workspace_relative_path)
+                    display_html(text)
+                    is_nb_output_link_shown = True
+
+            if execution_status in EXECUTIONS_TERMINAL_STATUS:
+                display_html("Execution completed. Status: {}".format(execution_status))
+                break
+
+            time.sleep(10)
 
     def get_output_nb_workspace(self, output_notebook_uri):
         workspace_s3_prefix = os.environ["KERNEL_WORKSPACE_DIR_S3_PREFIX"]
