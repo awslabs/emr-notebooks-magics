@@ -81,17 +81,21 @@ Note: EMR-notebook-magics cannot be installed through bootstrap actions as JEG a
       ```
       %mount_workspace_dir mydirectory --use goofys --params cheap,region=us-east-1
       ```
-* `%execute_notebook` magic executes a Notebook from the Workspace.
-   Additional permissions required on [EMR-EC2 instance role](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-iam-role-for-ec2.html) to execute this magic. Refer `%execute_notebook?` for help.
-    * Execute a notebook in the Workspace
-      ```
-      %execute_notebook <relative-file-path>
-      ```
-    * Execute a notebook specific cluster id and notebook service role
-      ```
-      %execute_notebook <notebook_name>.ipynb --cluster-id <emr-cluster-id> --service-role <emr-notebook-service-role>
-      ```
-
+* `%execute_notebook` magic executes another notebook in the background.
+   Consider executing long-running notebooks in the background to ensure that the output is continuously captured 
+   even in case of a local network disruption.  The output of the executed cells are incrementally captured in a 
+   new notebook with the same name as the executed notebook. The output notebook is placed inside a separate folder 
+   within the Workspace. Additional permissions are required for 
+   [EMR-EC2 instance role](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-iam-role-for-ec2.html) to execute 
+   this magic. Refer %execute_notebook? for help.
+   * Execute a notebook in the Workspace
+     ```
+     %execute_notebook <relative-file-path>
+     ```
+   * Execute a notebook specific cluster id and notebook service role
+     ```
+     %execute_notebook <notebook_name>.ipynb --cluster-id <emr-cluster-id> --service-role <emr-notebook-service-role>
+     ```
 
 | :exclamation:  Warnings                  |
 |-----------------------------------------|
