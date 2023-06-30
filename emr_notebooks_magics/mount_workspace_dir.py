@@ -143,6 +143,8 @@ class MountWorkspaceDirMagics(Magics):
         # readonly mount by default
         if read_only and "umask" not in mount_params:
             mount_params = "-o umask=277 " + mount_params
+        if "notsup_compat_dir" not in mount_params:
+            mount_params = "-o compat_dir " + mount_params
 
         # mount the directory as the current user
         if "uid" not in mount_params:
